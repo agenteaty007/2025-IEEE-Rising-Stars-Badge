@@ -11,6 +11,8 @@ Buttons on GP3,4,5,6,7,8 (ACTIVE LOW)
 RGB on 20,21,22
 
 Tool for MP4 to GIF: ezgif.com
+
+Memory Leak Fixed by Chad
 """
 
 import time
@@ -33,8 +35,8 @@ import os
 import struct
 import gifio
 
-first_name = "Alberto"
-last_name = "Tam Yong"
+first_name = "PROGRAM"
+last_name = "ME!"
 title = "Organizer"
 organization = "IEEE Rising Stars Conf."
 
@@ -83,7 +85,8 @@ time.sleep(1)  # Wait a bit
 
 # Create a display group for our screen objects
 g = displayio.Group()
-bg = displayio.Group()
+mtt = displayio.Group()
+
 
 font = terminalio.FONT
 color = 0xFFFFFF
@@ -203,123 +206,106 @@ def buttons_scan():
         rgb_led.color = (0,0,0)
 
 badge_loaded = 0
+
+def generate_name_screen(fname, lname, text_title, text_organization, logo_file="Full Logo 2025 Shine 320x100.bmp"):
+    screenvar = displayio.Group()
+    f = open(logo_file, "rb")
+    pic = displayio.OnDiskBitmap(f)
+    # Create a Tilegrid with the bitmap and put in the displayio group
+    # CircuitPython 6 & 7 compatible
+    t = displayio.TileGrid(pic, pixel_shader=getattr(pic, "pixel_shader", displayio.ColorConverter()))
+
+    # CircuitPython 7 compatible only
+    # t = displayio.TileGrid(pic, pixel_shader=pic.pixel_shader)
+    screenvar.append(t)
+
+    # add text - name
+    # above bitmap is 320x100 on a 320x240 display
+    text_name = fname + " " + lname
+    # self-centering and scalar selection
+    text_name_scale = 3
+    text_name_size = len(text_name)
+    text_name_xpixels = text_name_scale * text_name_size * FONT_X_SIZE    # total pixel width of the string
+    if text_name_xpixels < DISPLAY_WIDTH:
+        x_off_center_calc = int((DISPLAY_WIDTH/2) - (text_name_xpixels/2))
+        text_group_name = displayio.Group(scale=text_name_scale, x=x_off_center_calc, y=130)
+        text_area_name = label.Label(font, text=text_name, color=color)
+        text_group_name.append(text_area_name) # subgroup for text scaling
+        screenvar.append(text_group_name)
+    else:
+        # Maybe make into 2 lines, large first name and smaller last name
+        # First name
+        text_name = first_name
+        text_name_scale = 3
+        text_name_size = len(text_name)
+        text_name_xpixels = text_name_scale * text_name_size * FONT_X_SIZE    # total pixel width of the string
+        x_off_center_calc = (DISPLAY_WIDTH/2) - (text_name_xpixels/2)
+        text_group_name = displayio.Group(scale=text_name_scale, x=x_off_center_calc, y=130)
+        text_area_name = label.Label(font, text=text_name, color=color)
+        text_group_name.append(text_area_name) # subgroup for text scaling
+        screenvar.append(text_group_name)
+
+        # Last name
+        y_off_calc = text_name_scale * FONT_Y_SIZE
+        text_name = last_name
+        text_name_scale = 2
+        text_name_size = len(text_name)
+        text_name_xpixels = text_name_scale * text_name_size * FONT_X_SIZE    # total pixel width of the string
+        x_off_center_calc = (DISPLAY_WIDTH/2) - (text_name_xpixels/2)
+        text_group_name = displayio.Group(scale=text_name_scale, x=x_off_center_calc, y=(130 + y_off_calc))
+        text_area_name = label.Label(font, text=text_name, color=color)
+        text_group_name.append(text_area_name) # subgroup for text scaling
+        screenvar.append(text_group_name)
+
+
+    # add text - title
+    if len(text_title) > 0:
+        text_title_scale = 2 if len(text_organization) > 0 else 3
+        text_title_size = len(text_title)
+        text_title_xpixels = text_title_scale * text_title_size * FONT_X_SIZE    # total pixel width of the string
+        x_off_center_calc = int((DISPLAY_WIDTH/2) - (text_title_xpixels/2))
+        text_group_title = displayio.Group(scale=text_title_scale, x=x_off_center_calc, y=185)
+        text_area_title = label.Label(font, text=text_title, color=color)
+        text_group_title.append(text_area_title) # subgroup for text scaling
+        screenvar.append(text_group_title)
+
+    # add text - organization
+    if len(text_organization) > 0:
+        text_organization_scale = 2 if len(text_title) > 0 else 3
+        text_organization_size = len(text_organization)
+        text_organization_xpixels = text_organization_scale * text_organization_size * FONT_X_SIZE    # total pixel width of the string
+        x_off_center_calc = int((DISPLAY_WIDTH/2) - (text_organization_xpixels/2))
+        text_group_organization = displayio.Group(scale=text_organization_scale, x=x_off_center_calc, y=215)
+        text_area_organization = label.Label(font, text=text_organization, color=color)
+        text_group_organization.append(text_area_organization) # subgroup for text scaling
+        screenvar.append(text_group_organization)
+    return screenvar
+
+
 #while True:
-def badge_func():
+def badge_func(screen1, screen2):
     global badge_loaded
-    if badge_loaded == 0:
-        # print("TFT load image")
-        # Display graphic from the root directory of the CIRCUITPY drive
-        with open("Full Logo 2025 Shine 320x100.bmp", "rb") as f:
-            pic = displayio.OnDiskBitmap(f)
-            # Create a Tilegrid with the bitmap and put in the displayio group
-            # CircuitPython 6 & 7 compatible
-            t = displayio.TileGrid(
-                pic, pixel_shader=getattr(pic, "pixel_shader", displayio.ColorConverter())
-            )
-            # CircuitPython 7 compatible only
-            # t = displayio.TileGrid(pic, pixel_shader=pic.pixel_shader)
-            g.append(t)
+    if badge_loaded == 2:
+        display.root_group = screen1
+        badge_loaded = 0
+    else:
+        display.root_group = screen2
+        badge_loaded = 2
 
-            # add text - name
-            # above bitmap is 320x100 on a 320x240 display
-            text_name = first_name + " " + last_name
-            # self-centering and scalar selection
-            text_name_scale = 3
-            text_name_size = len(text_name)
-            text_name_xpixels = text_name_scale * text_name_size * FONT_X_SIZE    # total pixel width of the string
-            if text_name_xpixels < DISPLAY_WIDTH:
-                x_off_center_calc = int((DISPLAY_WIDTH/2) - (text_name_xpixels/2))
-                text_group_name = displayio.Group(scale=text_name_scale, x=x_off_center_calc, y=130)
-                text_area_name = label.Label(font, text=text_name, color=color)
-                text_group_name.append(text_area_name) # subgroup for text scaling
-                g.append(text_group_name)
-            else:
-                # Maybe make into 2 lines, large first name and smaller last name
-                # First name
-                text_name = first_name
-                text_name_scale = 3
-                text_name_size = len(text_name)
-                text_name_xpixels = text_name_scale * text_name_size * FONT_X_SIZE    # total pixel width of the string
-                x_off_center_calc = (DISPLAY_WIDTH/2) - (text_name_xpixels/2)
-                text_group_name = displayio.Group(scale=text_name_scale, x=x_off_center_calc, y=130)
-                text_area_name = label.Label(font, text=text_name, color=color)
-                text_group_name.append(text_area_name) # subgroup for text scaling
-                g.append(text_group_name)
-
-                # Last name
-                y_off_calc = text_name_scale * FONT_Y_SIZE
-                text_name = last_name
-                text_name_scale = 2
-                text_name_size = len(text_name)
-                text_name_xpixels = text_name_scale * text_name_size * FONT_X_SIZE    # total pixel width of the string
-                x_off_center_calc = (DISPLAY_WIDTH/2) - (text_name_xpixels/2)
-                text_group_name = displayio.Group(scale=text_name_scale, x=x_off_center_calc, y=(130 + y_off_calc))
-                text_area_name = label.Label(font, text=text_name, color=color)
-                text_group_name.append(text_area_name) # subgroup for text scaling
-                g.append(text_group_name)
-
-
-            # add text - title
-            text_title = title
-            text_title_scale = 2
-            text_title_size = len(text_title)
-            text_title_xpixels = text_title_scale * text_title_size * FONT_X_SIZE    # total pixel width of the string
-            x_off_center_calc = int((DISPLAY_WIDTH/2) - (text_title_xpixels/2))
-            text_group_title = displayio.Group(scale=text_title_scale, x=x_off_center_calc, y=185)
-            text_area_title = label.Label(font, text=text_title, color=color)
-            text_group_title.append(text_area_title) # subgroup for text scaling
-            g.append(text_group_title)
-
-            # add text - organization
-            #text_group_organization = displayio.Group(scale=2, x=30, y=215)
-            #text_organization = organization
-            #text_area_organization = label.Label(font, text=text_organization, color=color)
-            #text_group_organization.append(text_area_organization) # subgroup for text scaling
-            #g.append(text_group_organization)
-
-            text_organization = organization
-            text_organization_scale = 2
-            text_organization_size = len(text_organization)
-            text_organization_xpixels = text_organization_scale * text_organization_size * FONT_X_SIZE    # total pixel width of the string
-            x_off_center_calc = int((DISPLAY_WIDTH/2) - (text_organization_xpixels/2))
-            text_group_organization = displayio.Group(scale=text_organization_scale, x=x_off_center_calc, y=215)
-            text_area_organization = label.Label(font, text=text_organization, color=color)
-            text_group_organization.append(text_area_organization) # subgroup for text scaling
-            g.append(text_group_organization)
-
-            # Place the display group on the screen
-            display.root_group = g
-
-            # Refresh the display to have it actually show the image
-            # NOTE: Do not refresh eInk displays sooner than 180 seconds
-            display.refresh()
-            #print("refreshed")
+    # Refresh the display to have it actually show the image
+    # NOTE: Do not refresh eInk displays sooner than 180 seconds
+    display.refresh()
+    #print("refreshed")
 
             # memory clean up
-            gc.collect()
-            print('Free memory at code point 1: {} bytes'.format(gc.mem_free()) )
-            print(badge_loaded)
-            #badge_loaded = 1
-    else:
-        # Place the display group on the screen
-        display.root_group = g
-
-        # Refresh the display to have it actually show the image
-        # NOTE: Do not refresh eInk displays sooner than 180 seconds
-        display.refresh()
-
-        # memory clean up
-        gc.collect()
-        print('Free memory at code point 1: {} bytes'.format(gc.mem_free()) )
-        print(badge_loaded)
-
-    #green_leds_blink()
-    #buttons_scan()
-    # time.sleep(0.05)
+    gc.collect()
+    print('Free memory at code point 1: {} bytes'.format(gc.mem_free()) )
+    print(badge_loaded)
 
 COL_OFFSET = 0
 ROW_OFFSET = 30
 def gif_func():
+    bg = displayio.Group()
     # Set black background to clear screen
     bg_gif = displayio.Bitmap(320,240,1)
     bg_black = displayio.Palette(1)
@@ -368,17 +354,25 @@ def gif_func():
 
 #print("done")
 prev_state = 0
-
+screenflipcnt = 1
+badge_screen = generate_name_screen(first_name, last_name, title, organization)
+ad_screen = generate_name_screen("Come See", "MTT-S", "", "Egyptian Ballroom")
+screen_flip_count = 20
+badge_loaded = 2
 while True:
     # pass
     green_leds_blink()
     buttons_scan()
     time.sleep(0.05)
+    screenflipcnt += 1
+    if screenflipcnt % screen_flip_count == 0:
+        if prev_state == screen_badge:
+            prev_state = screen_trailer
     if prev_state != screen_state:
         prev_state = screen_state
         if screen_state == screen_badge:
-            badge_func()
+            badge_func(badge_screen, ad_screen)
         elif screen_state == screen_trailer:
             gif_func()
         else:
-            badge_func()
+            badge_func(badge_screen, ad_screen)
