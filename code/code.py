@@ -33,9 +33,9 @@ import os
 import struct
 import gifio
 
-first_name = "PROGRAM"
-last_name = "ME!"
-title = "Organizer"
+first_name = "Chad"
+last_name = "Kidder"
+title = "Paparazzo"
 organization = "IEEE Rising Stars Conf."
 
 # --------------- END OF CONFIG --------------
@@ -165,7 +165,7 @@ wheel = 0
 colorwheel_enable = 1
 def buttons_scan():
     global wheel_delay, wheel_delay_count, wheel, colorwheel_enable
-    global screen_state
+    global screen_state, screen_flip_count
     brightness = 16
     irq_button = 0
     nSw = [1,button_s1.value,button_s2.value, button_s3.value, button_s4.value, button_s5.value, button_s6.value]
@@ -203,13 +203,15 @@ def buttons_scan():
     if sw[3] or sw[4] or sw[5] or sw[6]:
         if sw[3]:
             screen_state = screen_qr1
-        elif sw[6]:
-            screen_state = screen_qr2
+        elif sw[5]:
+            screen_flip_count -= 1
+            if screen_flip_count < 1:
+                screen_flip_count = 1
         elif sw[4]:
-            screen_state = screen_badge
-        elif sw[5] and screen_state != screen_trailer:
+            screen_flip_count += 1
+        elif sw[6] and screen_state != screen_trailer:
             screen_state = screen_trailer
-        elif sw[5] and screen_state != screen_badge:
+        elif sw[6] and screen_state != screen_badge:
             screen_state = screen_badge
         else:
             screen_state = screen_default
@@ -295,12 +297,9 @@ def generate_name_screen(fname, lname, text_title, text_organization, logo_file=
 #while True:
 def badge_func(screen1, screen2=0):
     global badge_loaded
-    if badge_loaded == 2:
-        display.root_group = screen1
-        # badge_loaded = 0                  # For animated text, uncomment this
-    else:
-        display.root_group = screen2
-        badge_loaded = 2
+    displayid = badge_loaded % len(screens)
+    display.root_group = screens[displayid]
+    badge_loaded = displayid + 1
 
     # Refresh the display to have it actually show the image
     # NOTE: Do not refresh eInk displays sooner than 180 seconds
@@ -405,7 +404,13 @@ def img_qr_func(img_file, img_size_x, img_size_y, img_caption):
 prev_state = 0
 screenflipcnt = 1
 badge_screen = generate_name_screen(first_name, last_name, title, organization)
-ad_screen = generate_name_screen("Come See", "MTT-S", "", "Egyptian Ballroom")
+ad_screen = generate_name_screen(first_name, last_name, "R6 Chapter Coordinator", "MTT-S", logo_file="MTT-S.bmp")
+# ad_screen2 = generate_name_screen(first_name, last_name, "Marketing & Branding Com.", "MTT-S", logo_file="MTT-S.bmp")
+ad_screen3 = generate_name_screen(first_name, last_name, "Conference Committee Chair", "IEEE USA", logo_file="ieee-usa-logo-color_320px.bmp")
+ad_screen4 = generate_name_screen(first_name, last_name, "Training Chair", "IEEE Region 6", logo_file="Region6_Logo_RGB_Blue.bmp")
+ad_screen5 = generate_name_screen(first_name, last_name, "Chapter Support Committee", "IEEE MGA", logo_file="ieee mb blue.bmp")
+
+screens = [badge_screen, ad_screen, ad_screen3, ad_screen4, ad_screen5]
 qr_screen1 = img_qr_func("qr-link-risingstarswebsite_200px.bmp",200,200,"www.ieee-risingstars.org")
 qr_screen2 = img_qr_func("qr-link-risingstarslinkedin_200px.bmp",200,200,"LinkedIn for IEEE Rising Stars Conference")
 screen_flip_count = 20
@@ -423,13 +428,13 @@ while True:
         prev_state = screen_state
         if screen_state == screen_badge:
             #badge_func(badge_screen, ad_screen)
-            badge_func(badge_screen)
+            badge_func(screens)
         elif screen_state == screen_trailer:
             gif_func()
         elif screen_state == screen_qr1:
-            badge_func(qr_screen1)
+            badge_func([qr_screen1])
         elif screen_state == screen_qr2:
-            badge_func(qr_screen2)
+            badge_func([qr_screen2])
         else:
             #badge_func(badge_screen, ad_screen)
-            badge_func(badge_screen)
+            badge_func(screens)
