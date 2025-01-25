@@ -190,29 +190,33 @@ def buttons_scan():
         time.sleep(0.05) # debouncer
     else: wheel_delay_count = wheel_delay_count + 1
 
-    if sw[3] or sw[6] or sw[4]:
-        # manual LED colors: r,g,b
-        rgb_led.color = (brightness*sw[3],brightness*sw[6],brightness*sw[4])
-    elif colorwheel_enable:
-        #rgb_led.color = colorwheel(wheel) # note, kinda bright
-        rgb_led.color = custom_wheel2(wheel,brightness) # custom
-    elif not colorwheel_enable:
-        rgb_led.color = (0,0,0)
+    # if sw[3] or sw[6] or sw[4]:
+    #     # manual LED colors: r,g,b
+    #     rgb_led.color = (brightness*sw[3],brightness*sw[6],brightness*sw[4])
+    # elif colorwheel_enable:
+    #     #rgb_led.color = colorwheel(wheel) # note, kinda bright
+    #     rgb_led.color = custom_wheel2(wheel,brightness) # custom
+    # elif not colorwheel_enable:
+    #     rgb_led.color = (0,0,0)
 
     # screen state control
     if sw[3] or sw[4] or sw[5] or sw[6]:
         if sw[3]:
-            screen_state = screen_qr1
+            if screen_state == screen_qr1:
+                screen_state = screen_qr2
+            else:
+                screen_state = screen_qr1
         elif sw[5]:
             screen_flip_count -= 1
             if screen_flip_count < 1:
                 screen_flip_count = 1
         elif sw[4]:
             screen_flip_count += 1
-        elif sw[6] and screen_state != screen_trailer:
-            screen_state = screen_trailer
-        elif sw[6] and screen_state != screen_badge:
-            screen_state = screen_badge
+        elif sw[6]:
+            if screen_state != screen_trailer:
+                screen_state = screen_trailer
+            else:
+                screen_state = screen_badge
         else:
             screen_state = screen_default
         time.sleep(0.05) # debouncer
@@ -295,10 +299,10 @@ def generate_name_screen(fname, lname, text_title, text_organization, logo_file=
 
 
 #while True:
-def badge_func(screen1, screen2=0):
+def badge_func(screenlist:list):
     global badge_loaded
-    displayid = badge_loaded % len(screens)
-    display.root_group = screens[displayid]
+    displayid = badge_loaded % len(screenlist)
+    display.root_group = screenlist[displayid]
     badge_loaded = displayid + 1
 
     # Refresh the display to have it actually show the image
