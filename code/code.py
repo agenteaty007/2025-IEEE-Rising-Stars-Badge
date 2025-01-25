@@ -211,8 +211,10 @@ def buttons_scan():
             screen_flip_count += 1
         elif sw[6]:
             if screen_state != screen_trailer:
+                prev_state = screen_state
                 screen_state = screen_trailer
             else:
+                prev_state = screen_state
                 screen_state = screen_badge
         else:
             screen_state = screen_default
@@ -352,13 +354,14 @@ def gif_func():
             green_leds_blink()
             buttons_scan()
             if screen_state != screen_trailer:
+                print("Exiting Gif show")
                 break
         # End while
         # Clean up memory
         odg.deinit()
         odg = None
         gc.collect()
-        print('Free memory at code point 1: {} bytes'.format(gc.mem_free()) )
+        print('Free memory at code point 361: {} bytes'.format(gc.mem_free()) )
         time.sleep(0.05)
         break
 
