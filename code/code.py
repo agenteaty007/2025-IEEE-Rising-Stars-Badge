@@ -109,8 +109,7 @@ screen_state = 1
 screen_default = 1
 screen_badge = 1
 screen_trailer = 2
-screen_qr1 = 3
-screen_qr2 = 4
+screen_qr = 3
 
 # print("setup done")
 
@@ -165,7 +164,7 @@ wheel = 0
 colorwheel_enable = 1
 def buttons_scan():
     global wheel_delay, wheel_delay_count, wheel, colorwheel_enable
-    global screen_state, screen_flip_count
+    global screen_state, screen_flip_count, prev_state
     brightness = 16
     irq_button = 0
     nSw = [1,button_s1.value,button_s2.value, button_s3.value, button_s4.value, button_s5.value, button_s6.value]
@@ -185,10 +184,10 @@ def buttons_scan():
 
     if sw[1]: colorwheel_enable = 1
     if sw[2]: colorwheel_enable = 0
-    if sw[5]:
-        wheel_delay_count = wheel_delay_count
-        time.sleep(0.05) # debouncer
-    else: wheel_delay_count = wheel_delay_count + 1
+    # if sw[5]:
+    #     wheel_delay_count = wheel_delay_count
+    #     time.sleep(0.05) # debouncer
+    # else: wheel_delay_count = wheel_delay_count + 1
 
     # if sw[3] or sw[6] or sw[4]:
     #     # manual LED colors: r,g,b
@@ -202,10 +201,8 @@ def buttons_scan():
     # screen state control
     if sw[3] or sw[4] or sw[5] or sw[6]:
         if sw[3]:
-            if screen_state == screen_qr1:
-                screen_state = screen_qr2
-            else:
-                screen_state = screen_qr1
+            screen_state = screen_qr
+            prev_state = screen_trailer
         elif sw[5]:
             screen_flip_count -= 1
             if screen_flip_count < 1:
@@ -435,10 +432,8 @@ while True:
             badge_func(screens)
         elif screen_state == screen_trailer:
             gif_func()
-        elif screen_state == screen_qr1:
-            badge_func([qr_screen1])
-        elif screen_state == screen_qr2:
-            badge_func([qr_screen2])
+        elif screen_state == screen_qr:
+            badge_func([qr_screen1, qr_screen2])
         else:
             #badge_func(badge_screen, ad_screen)
             badge_func(screens)
